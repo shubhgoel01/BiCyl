@@ -1,0 +1,176 @@
+ Previously what approach i was using is i was storing user data with email and password, and when user comes and enters the
+    roll n umber and password, then i fetch that password and email and login to the firebase.
+    bit main problem in this approach is that it contains, lot of security issues, like if database is exploited anyone can access
+    main gmail password, else what can i do is remove password field from the data and when the user comes , and enters the roll number and password,
+    i check if that roll_number is present in the database if yes, the logins using the stored gmail ans user entered password
+
+
+--------------------------------------------------------------------------------------------------------
+If you decide to separate user general data (e.g., roll number, name, email) from app-specific data (e.g., user preferences, settings)
+ by storing general data in a students node and app-specific data in a users node, you can still achieve an efficient and organized
+ database structure. Here's how you can manage and structure this approach:
+
+
+ Advantages of This Approach:
+ Separation of Concerns:
+
+ General Data: Store general student data in the students node. This keeps academic or personal information separate from app-specific settings.
+ App-Specific Data: Store data specific to app functionalities in the users node. This can include preferences, settings, or other app-related details.
+ Flexibility:
+
+ Updating Information: You can update general student data or app-specific data independently without affecting the other.
+ Scalability: This structure allows you to scale your app by managing different types of data effectively.
+ Security:
+
+ Reduced Redundancy: Store only the necessary data in each node, reducing redundancy and potential security risks associated with handling sensitive information.
+
+ ------------------------------------------------------------------------------------------------------------
+
+ DATABASE STRUCTURE
+
+ students/
+   "12345"/
+     name: "John Doe"
+     email: "john@example.com"
+     // Other general information
+
+users/
+  <uid>/
+    rollNumber: "12345"
+    appSpecificData1: "value1"
+    appSpecificData2: "value2"
+    // Other app-specific information
+
+roll_to_uid_map
+    └── uid12345:
+            └── registrationNumber: "ROLL123"
+
+
+---------------------------------------------------------------------------------------------------------------
+
+CLEARED CODE READABILITY
+
+Coroutine Handling with withContext:
+In Kotlin, withContext is used to change the coroutine context in a suspend function. When you need to perform a task on a different thread (e.g., moving a task from the main thread to a background thread), you can use withContext.
+
+Original Approach:
+
+CoroutineScope(Dispatchers.Main).launch {
+    add_to_database(student)
+}
+In your original code, you were launching a new coroutine on the Dispatchers.Main thread, which is the main UI thread. While this works, it's not ideal for database operations or network calls because these tasks should be performed in a background thread to avoid blocking the UI.
+
+Changed Approach:
+
+withContext(Dispatchers.IO) {
+    add_to_database(student)
+}
+Using withContext(Dispatchers.IO) switches the coroutine context to a background thread (specifically, an IO-optimized thread). This is more efficient for operations like database writes, network calls, and any other IO-bound tasks. The code is also easier to read since it doesn’t require launching a new coroutine, and it keeps the flow linear within the suspend function.
+
+3. Use of await() for Firebase Tasks:
+Firebase tasks (like creating a user or signing in) return Task<T> objects, which typically require callbacks (addOnCompleteListener, addOnSuccessListener) to handle the result.
+
+Original Approach:
+
+auth.createUserWithEmailAndPassword(student.email.toString(), password.toString())
+    .addOnCompleteListener { task ->
+        if (task.isSuccessful) {
+            // Handle success
+        } else {
+            // Handle failure
+        }
+    }
+This approach uses a listener to handle the task result asynchronously. While this is the standard method, it can lead to more complex and nested code, especially when combined with other asynchronous operations.
+
+Changed Approach:
+
+
+try {
+    val authResult = auth.createUserWithEmailAndPassword(student.email.toString(), password.toString()).await()
+    // Handle success using authResult
+} catch (e: Exception) {
+    // Handle failure
+}
+Here, await() is used within a coroutine to wait for the Firebase operation to complete. The function await() suspends the coroutine until the task is done, returning the result or throwing an exception if the task failed.
+
+Benefits:
+
+Cleaner Code: Using await() leads to more linear code without the need for nested listeners or callbacks.
+Error Handling: With await(), you can use a try-catch block to handle errors in one place, which is more straightforward than handling errors inside listeners.
+Coroutine Integration: Since await() is part of the coroutine framework, it integrates seamlessly with other suspend functions, making the entire process more consistent and easier to manage.
+
+------------------------------------------------------------------------------------------------------------
+
+if(user!=null)
+//    {
+//        //it should be launched in main thread, because before the ui gets updated , we first need to fetch registration number
+//        CoroutineScope(Dispatchers.Main).launch {
+//            val rollToUidRef:RollToUidMap? = database.reference.child("roll_to_uid_map").child(user!!.uid).get().await().getValue(RollToUidMap::class.java)
+//            registrationNumber= rollToUidRef?.Registration_Number.toString()
+//            //get() performs an asynchronous read operation from the Firebase Realtime Database. It does not block the main thread while it fetches the data.
+//            // The get() method Returns a Task<DataSnapshot> that you can use to retrieve the data once it's available.
+//            //getValue(String::class.java) getValue() reads the data at the location of the database reference where it's called and returns it in the form of the data type you specify.
+//        }
+//
+//    }
+
+---------------------------------------------------------------------------------------------------------------
+
+All database related function should be done inside the repository and the viewmodel shoul be implementing/accessing those, and based on that changed
+values our UI should respond using state change,
+what i was doing i was try to fetch data directly from ui composables and handling those calls and error, but creating lot of error, and complexity
+
+----------------------------------------------------------------------------------------------------------------
+
+while creating data class ensure that you define variables as var whose value you need to read from database or change, what i did
+i created data variables as val and now getting empty string while retrieving data from database, because database was not able to overwrite the values
+
+------------------------------------------------------------------------------------------------------------------
+
+I Am supposing that there is a variable as ImageURL in student data that contains the direct link of the image on web or storage, then in order
+to display the image in UI i am using  function provided by
+                    'implementation("io.coil-kt:coil-compose:2.4.0") ' dependency
+
+val imageUrl = student.imageURL.ifEmpty { "default" }
+AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(if (imageUrl == "default") R.drawable.person else imageUrl)
+                .placeholder(R.drawable.person)  // Placeholder while loading
+                .error(R.drawable.person)  // Error image if loading fails
+                .build(),
+            contentDescription = "Student Image",
+            modifier = Modifier
+                .size(100.dp)  // Define size for the image
+                .padding(end = 10.dp)  // Padding to the right of the image
+        )
+This loads image asynchronously and handles are the events like loading or error occurred,
+Loading images asynchronously avoids blocking the main thread, ensuring smooth UI performance.
+AsyncImage handles the loading process in the background, so your app remains responsive.
+A placeholder image (R.drawable.person) is shown while the actual image is being loaded.
+This provides a better user experience by giving visual feedback that something is being fetched.
+An error image (R.drawable.person) is displayed if the image fails to load (e.g., due to a broken URL).
+This helps in gracefully handling issues without breaking the UI.
+The ImageRequest.Builder allows you to configure various aspects of image loading, such as caching
+strategies, transformations, and more. This approach is highly flexible and adaptable to different use cases.
+
+------------------------------------------------------------------------------------------------------------------
+
+homeScreen(student!!, database = database)  //student!! i am using !! as i have already checked that student
+                //student i not equal to zero and passing student ans String and not String?. This removes lot of overhead to
+                // check if student is not null further
+
+-----------------------------------------------------------------------------------------------------------------
+
+Currently to differentiate if the user is a student or admin i am using approach that i will search for the firebase uid in the users first
+if a 'node' inside 'Users' exists with that UID then user is a student, else user will be admin and then call functions accordingly.
+(This approach is used when the user comes and the firebase automatically signs-in)
+
+This problem will not come if user signs-in manually because if user is a student then he will be signing-in with student-login page
+that calls further student-login/signIn specific functions and if user is admin then he will login using admin-login-page which will call
+admin-login/signIn specific functions.
+
+But good practice is to create a separate field with node UID/value as firebase authentication uid and then store in it if the UID refers
+to admin or student and then proceed accordingly.
+
+--------------------------------------------------------------------------------------------------------------------
+This application assumes that once the time is over for the booked schedule, the user returns the bi-cycle for confirm.

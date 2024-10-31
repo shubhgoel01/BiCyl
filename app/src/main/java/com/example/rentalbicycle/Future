@@ -1,0 +1,39 @@
+
+View ongoing ride separately.
+Ride should be completed automatically after time is over.
+
+
+
+
+History :
+    View history of that particular customer.
+
+Admin Page :
+    Admin can delete, add cycle.
+    Admin can add, delete students.
+    If he wants, he can check all schedules without user details and delete the schedule with alert message to the customer.
+
+        Student DashBoard:
+            Total registered Students.
+            Total active/login users.
+            Add student.
+            Remove Student.
+
+        Cycle DashBoard:
+            Add Cycle.
+            Remove Cycle.
+
+        Schedules DashBoard
+            Total Schedules for the day.
+            Delete any schedule.
+
+
+
+
+
+
+Premium :
+    user can cancel rides up-to a certain number without any penalty.
+
+
+Add payment and its confirmation page.

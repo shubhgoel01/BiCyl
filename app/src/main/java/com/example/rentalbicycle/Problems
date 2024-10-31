@@ -1,0 +1,7 @@
+
+GetCycles is not getting called automatically, state changes is not ensuring recomposition.
+
+Using mutable objects such as ArrayList<T> or mutableListOf() as state in Compose causes your users to see incorrect or stale
+ data in your app. Mutable objects that are not observable, such as ArrayList or a mutable data class, are not observable by
+ Compose and don't trigger a recomposition when they change. Instead of using non-observable mutable objects, the recommendation
+ is to use an observable data holder such as State<List<T>> and the immutable listOf()

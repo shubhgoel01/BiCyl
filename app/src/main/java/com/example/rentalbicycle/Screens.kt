@@ -664,9 +664,13 @@ fun singleTimeSlotView(cycle: Cycle, start: String, end: String,viewModel: MainV
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun addYourTimeSlot(onBook:(newStart:String,newEnd:String)->Unit,onDismiss: () -> Unit) {
+fun addYourTimeSlot(onBook:(newStart:String,newEnd:String)->Unit,onDismiss: () -> Unit,) {
     var start by remember { mutableStateOf("") }
     var end by remember { mutableStateOf("") }
+
+    //Accessing paymentStatus from MAinActivity
+    val context = LocalContext.current
+    val paymentStatus = (context as MainActivity).paymentStatus // Access paymentStatus
 
     AlertDialog(
         onDismissRequest = { onDismiss() },
@@ -735,7 +739,11 @@ fun addYourTimeSlot(onBook:(newStart:String,newEnd:String)->Unit,onDismiss: () -
         },
         confirmButton = {
             Button(
-                onClick = { onBook(start,end) },
+
+                onClick = {
+                    initPayment(context)
+//                    onBook(start,end)
+                    },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(text = "Book")
@@ -746,6 +754,17 @@ fun addYourTimeSlot(onBook:(newStart:String,newEnd:String)->Unit,onDismiss: () -
                 modifier = Modifier.fillMaxWidth())
         }
     )
+
+    //This will be called once payment is done and then cycle will be booked
+    paymentStatus.value?.let { isSuccess ->
+        if (isSuccess) {
+            Log.d("Payment","Calling onBook function")
+            onBook(start,end)
+
+            paymentStatus.value=null
+            // Call your booking function here if needed
+        }
+    }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)

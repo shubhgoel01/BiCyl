@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.gms.google-services")
+    id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
 }
 
 android {
@@ -19,6 +20,7 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
     }
 
     buildTypes {
@@ -90,4 +92,7 @@ dependencies {
 
     //For NavController
     implementation("androidx.compose.material:material:1.7.2")
+
+    //For razorPay integration
+    implementation ("com.razorpay:checkout:1.6.40")
 }
